@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лазурный Поток</title>
+    <style>
+        /* --- 0. ОБЩИЕ СТИЛИ И ПЕРЕМЕННЫЕ --- */
+        :root {
+            --surface-color: #87CEEB;
+            --mid-color: #4682B4;
+            --deep-color: #1E3A8A; /* Более глубокий синий */
+            --abyss-color: #05021a;
+            --accent-color: #00FFFF; /* Неоновый циан */
+            --light-color: #F0F8FF; /* AliceBlue */
+            --shadow-color: rgba(0, 255, 255, 0.5);
+            --font-main: 'Comfortaa', cursive;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--abyss-color);
+            color: var(--light-color);
+            cursor: none; /* Скрываем стандартный курсор */
+            overflow: hidden; /* Критически важно для кастомного скролла */
+        }
+
+        /* --- 1. КУРСОР-РЫБКА --- */
+        #fish-cursor {
+            position: fixed;
+            width: 50px;
+            height: 50px;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: transform 0.2s ease-out; /* Плавность поворота */
+        }
+        #fish-cursor svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 5px var(--accent-color));
+        }
+
+        /* --- 2. ЗАГРУЗКА И НАЧАЛЬНЫЙ ЭКРАН --- */
+        #preloader {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1000;
+            display: flex; justify-content: center; align-items: center;
+            background: var(--abyss-color);
+            transition: opacity 1s ease 3.5s;
+        }
+        #water-fill {
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%; height: 0;
+            background: linear-gradient(to top, var(--mid-color), var(--surface-color));
+            animation: fill-water 3s ease-out forwards;
+        }
+        @keyframes fill-water { to { height: 100%; } }
+        #preloader-text {
+            color: white; z-index: 1001; font-size: 2rem; opacity: 0;
+            animation: fade-in-text 1s 2s forwards;
+        }
+        @keyframes fade-in-text { to { opacity: 1; } }
+
+        /* --- 3. ПАНЕЛЬ НАВИГАЦИИ --- */
+        #top-nav {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%;
+            padding: 15px 50px;
+            z-index: 800;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to bottom, rgba(5, 2, 26, 0.7), rgba(5, 2, 26, 0));
+            transition: transform 0.3s ease;
+        }
+        #top-nav a {
+            color: var(--light-color);
+            text-decoration: none;
+            margin: 0 20px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            transition: color 0.3s, text-shadow 0.3s;
+        }
+        #top-nav a:hover {
+            color: var(--accent-color);
+            text-shadow: 0 0 10px var(--shadow-color);
+        }
+
+        /* --- 4. ОСНОВНОЙ КОНТЕЙНЕР И ПАРАЛЛАКС --- */
+        #viewport {
+            width: 100%;
+            height: 100vh;
+            overflow-y: scroll; /* Разрешаем скролл здесь */
+            overflow-x: hidden;
+            perspective: 10px;
+        }
+        #world {
+            position: relative;
+            width: 100%;
+            height: 500vh; /* Задаем большую высоту для скролла */
+            transform-style: preserve-3d;
+        }
+        .parallax-layer {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+        #background-layer {
+            transform: translateZ(-40px) scale(5);
+            background: linear-gradient(to bottom, var(--surface-color) 0%, var(--mid-color) 25%, var(--deep-color) 50%, var(--abyss-color) 100%);
+            z-index: 1;
+        }
+        #midground-layer {
+            transform: translateZ(-10px) scale(2);
+            z-index: 5;
+            pointer-events: none;
+        }
+        #content-layer {
+            transform: translateZ(0);
+            z-index: 10;
+        }
+        #foreground-layer {
+            transform: translateZ(8px) scale(0.2);
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        /* --- 5. ФОНОВЫЕ ЭЛЕМЕНТЫ (АНИМЕ, ВОДОРОСЛИ, ПУЗЫРЬКИ) --- */
+        #anime-girl {
+            position: absolute;
+            left: 5%;
+            bottom: 10%;
+            width: 400px;
+            opacity: 0.5;
+            filter: drop-shadow(0 0 15px var(--shadow-color));
+            animation: slow-float 25s ease-in-out infinite;
+        }
+        @keyframes slow-float {
+            0%, 100% { transform: translateY(0) translateX(0) rotate(-2deg); }
+            50% { transform: translateY(-50px) translateX(30px) rotate(2deg); }
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(0, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: rise 15s infinite ease-in;
+        }
+        @keyframes rise {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(-200vh); opacity: 0; }
+        }
+        
+        .seaweed {
+            position: absolute;
+            bottom: 0;
+            width: 100px;
+            height: 40%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 400"><path d="M50 400 C 80 300, 20 200, 50 0" stroke="%23008080" stroke-width="4" fill="none" stroke-linecap="round"/></svg>') no-repeat center center;
+            background-size: contain;
+            opacity: 0.4;
+            animation: sway 8s ease-in-out infinite;
+        }
+        @keyframes sway {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+        
+        /* --- 6. КОНТЕНТ И СЕКЦИИ --- */
+        .section {
+            min-height: 100vh;
+            padding: 15vh 10vw;
+            display: flex;
+            align-items: center;
+            position: relative; /* Важно для позиционирования контента внутри #world */
+            width: 100%;
+        }
+        .section > div { /* Контейнер для контента внутри секции */
+            max-width: 800px;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .section.visible > div {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section:nth-child(even) {
+            justify-content: flex-end;
+            text-align: right;
+        }
+         .section:nth-child(even) > div {
+             text-align: right;
+         }
+
+        h1, h2 {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 15px rgba(5, 2, 26, 0.8);
+            font-weight: 700;
+        }
+        p {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            font-weight: 300;
+        }
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .content-image {
+            max-width: 400px;
+            margin-top: 1rem;
+            border-radius: 20px;
+            border: 3px solid var(--shadow-color);
+            filter: drop-shadow(0 0 15px var(--shadow-color));
+            transition: transform 0.3s ease, filter 0.3s ease;
+        }
+        .content-image:hover {
+            transform: scale(1.05);
+            filter: drop-shadow(0 0 25px var(--shadow-color));
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- КУРСОР-РЫБКА (SVG) -->
+    <div id="fish-cursor">
+        <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <path d="M101.6,41.2c-2.4-2-21.2-4.4-21.2-4.4c-11.2,0-23.6,2.8-32,8.4c-16.4,11.2-22.4,28.4-22.4,28.4c-4.4,12.8,0.4,26.4,0.4,26.4  c2.4,5.6,8,8,8,8s14.4-4,20-13.2c0,0,13.2-20.8,30-26.8C100.8,59.6,104.4,43.6,101.6,41.2z" fill="#00ffff"/>
+            <circle cx="85.2" cy="52" r="4" fill="#05021a"/>
+        </svg>
+    </div>
+
+    <!-- ЭКРАН ЗАГРУЗКИ -->
+    <div id="preloader">
+        <div id="preloader-text">Погружение...</div>
+        <div id="water-fill"></div>
+    </div>
+    
+    <!-- ВЕРХНЯЯ НАВИГАЦИЯ -->
+    <nav id="top-nav">
+        <a href="#home">Поверхность</a>
+        <a href="#about">О нас</a>
+        <a href="#projects">Проекты</a>
+        <a href="#contact">Дно</a>
+    </nav>
+
+    <!-- ОСНОВНОЙ КОНТЕЙНЕР (VIEWPORT) -->
+    <div id="viewport">
+        <div id="world">
+            
+            <!-- Слои параллакса -->
+            <div class="parallax-layer" id="background-layer"></div>
+            
+            <div class="parallax-layer" id="midground-layer">
+                <!-- Аниме персонаж -->
+                <img id="anime-girl" src="https://i.ibb.co/c17FhJj/anime-girl-transparent.png" alt="Anime girl floating in water">
+                <!-- Водоросли -->
+                <div class="seaweed" style="left: 10%; height: 50%; animation-duration: 10s;"></div>
+                <div class="seaweed" style="left: 85%; height: 30%; animation-duration: 7s;"></div>
+            </div>
+            
+            <div class="parallax-layer" id="foreground-layer"></div>
+            
+            <!-- Слой с контентом -->
+            <div class="parallax-layer" id="content-layer">
+                
+                <section id="home" class="section">
+                    <div>
+                        <h1>Лазурный Поток</h1>
+                        <p>Начните свое путешествие в глубины креатива. Каждый скролл — это шаг в неизведанное. Просто прокрутите вниз, чтобы начать погружение.</p>
+                    </div>
+                </section>
+                
+                <section id="about" class="section">
+                    <div>
+                        <h2>Наша Философия</h2>
+                        <p>Мы верим, что лучшие идеи сокрыты от поверхностного взгляда. Подобно исследователям океана, мы погружаемся в суть каждого проекта, чтобы найти уникальные решения, сияющие, как <a href="#">глубоководные жемчужины</a>.</p>
+                    </div>
+                </section>
+                
+                <section id="projects" class="section">
+                     <div>
+                        <h2>Окна в Другие Миры</h2>
+                        <p>Наши работы — это порталы, искаженные толщей воды. Взгляните на миры, которые мы создали.</p>
+                        <img src="https://picsum.photos/800/600?random=3" alt="Пример работы 1" class="content-image">
+                    </div>
+                </section>
+                
+                <section id="contact" class="section">
+                    <div>
+                        <h1>Достигнув Дна</h1>
+                        <p>Вы здесь. В тишине и спокойствии. Готовы всплыть на поверхность с новыми идеями? <a href="#">Свяжитесь с нами</a> или <a href="#home">вернитесь наверх</a>.</p>
+                    </div>
+                </section>
+                
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const viewport = document.getElementById('viewport');
+        const world = document.getElementById('world');
+        const preloader = document.getElementById('preloader');
+        const fishCursor = document.getElementById('fish-cursor');
+        const foregroundLayer = document.getElementById('foreground-layer');
+        
+        // --- 1. ЛОГИКА ЗАГРУЗКИ ---
+        setTimeout(() => {
+            preloader.style.opacity = '0';
+            preloader.addEventListener('transitionend', () => preloader.style.display = 'none');
+        }, 3500);
+
+        // --- 2. КУРСОР-РЫБКА ---
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        let angle = 0;
+
+        window.addEventListener('mousemove', e => {
+            const dx = e.clientX - lastMouseX;
+            const dy = e.clientY - lastMouseY;
+            
+            // Рассчитываем угол только если есть движение
+            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            }
+
+            fishCursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px) rotate(${angle}deg)`;
+            
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        // --- 3. ПАРАЛЛАКС И СКРОЛЛ ---
+        const topNav = document.getElementById('top-nav');
+        let lastScrollY = 0;
+
+        viewport.addEventListener('scroll', () => {
+            const scrollY = viewport.scrollTop;
+
+            // Сдвигаем слои параллакса
+            // Формула: translateZ * (1 - 1/scale) * scrollY
+            // Для наших значений (scale = 5, 2, 0.2)
+            world.style.transform = `translateY(-${scrollY}px)`;
+
+            // Скрытие/показ навбара при скролле
+            if (scrollY > lastScrollY && scrollY > 200) {
+                topNav.style.transform = 'translateY(-100%)';
+            } else {
+                topNav.style.transform = 'translateY(0)';
+            }
+            lastScrollY = scrollY;
+        }, { passive: true });
+
+        // --- 4. АНИМАЦИЯ ЭЛЕМЕНТОВ ПРИ ПОЯВЛЕНИИ ---
+        const sections = document.querySelectorAll('.section');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                } else {
+                    // Можно убрать 'visible' для повторной анимации
+                    // entry.target.classList.remove('visible'); 
+                }
+            });
+        }, { threshold: 0.2 });
+
+        sections.forEach(section => observer.observe(section));
+        
+        // --- 5. ГЕНЕРАЦИЯ ПУЗЫРЬКОВ ---
+        for (let i = 0; i < 80; i++) {
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            const size = Math.random() * 20 + 5;
+            bubble.style.width = `${size}px`;
+            bubble.style.height = `${size}px`;
+            bubble.style.left = `${Math.random() * 100}%`;
+            // Позиционируем по всей высоте #world
+            bubble.style.top = `${Math.random() * (world.clientHeight)}px`; 
+            bubble.style.animationDelay = `${Math.random() * 15}s`;
+            bubble.style.animationDuration = `${Math.random() * 10 + 10}s`;
+            foregroundLayer.appendChild(bubble);
+        }
+
+        // --- 6. ПЛАВНЫЙ СКРОЛЛ ДЛЯ ЯКОРНЫХ ССЫЛОК НАВБАРА ---
+        document.querySelectorAll('#top-nav a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if(targetElement) {
+                    // viewport.scrollTo() - это то, что нам нужно
+                    viewport.scrollTo({
+                        top: targetElement.offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+    });
+    </script>
+</body>
+</html>
